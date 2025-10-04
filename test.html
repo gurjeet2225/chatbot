@@ -1,0 +1,906 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Voice4U – Brave Buddy Chatbot</title>
+  <style>
+    body {
+      margin:0; font-family:Arial,sans-serif; height:100vh;
+      display:flex; align-items:center; justify-content:center;
+      background:linear-gradient(270deg,#ff6ec4,#7873f5,#4ade80,#facc15,#f87171);
+      background-size:1000% 1000%; animation:rainbow 15s ease infinite;
+    }
+    @keyframes rainbow {
+      0%{background-position:0% 50%}
+      50%{background-position:100% 50%}
+      100%{background-position:0% 50%}
+    }
+
+    .wrap { width:95%; max-width:900px; }
+    .app { background: url('texture.jpg'); /* local image folder 'images' */ 
+      background-size: cover;
+      background-repeat: no-repeat;
+      border-radius: 20px;
+      padding: 20px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+      overflow: hidden;
+      position: relative;
+    }
+    .heading { text-align: center;
+      font-size: 34px;
+      font-weight: bold;
+      margin-bottom: 20px;
+      background: linear-gradient(90deg, #ff0080, #7928ca, #2afadf);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      animation: glow 3s infinite alternate;}
+    @keyframes glow {
+      0% { text-shadow:0 0 10px #ff0080,0 0 20px #ff0080; }
+      100%{ text-shadow:0 0 25px #2afadf,0 0 40px #7928ca; }
+    }
+    .mascot { background-color: transparent; position:absolute; top:150px; right:10px; width:200px; height:200px;
+      border-radius:0; cursor:pointer; transition:all 2s ease;}
+    .angry {
+      filter: hue-rotate(-50deg) saturate(5); /* turns reddish */
+      animation: shake 0.3s infinite;
+    }
+    @keyframes shake {
+      0% { transform: translate(0px, 0px) rotate(0deg); }
+      20% { transform: translate(-5px, 0px) rotate(-2deg); }
+      40% { transform: translate(5px, 0px) rotate(2deg); }
+      60% { transform: translate(-5px, 0px) rotate(-2deg); }
+      80% { transform: translate(5px, 0px) rotate(2deg); }
+      100% { transform: translate(0px, 0px) rotate(0deg); }
+    }
+    .controls { display:flex; gap:10px; margin-bottom:10px;}
+    .chat { height:350px; overflow-y:auto; margin-bottom:12px; background:rgba(255,255,255,0.5); border-radius:14px; padding:10px;}
+    .msg { margin:6px 0;}
+    .msg.user .bubble { background:#4ade80;color:white;border-radius:16px;padding:8px 12px;display:inline-block;}
+    .msg.bot .bubble { background:#fff;border:1px solid #ddd;border-radius:16px;padding:8px 12px;display:inline-block;}
+    .menu { background: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%);display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:10px;}
+    .card { background: linear-gradient(135deg, #f6d365 0%, #fda085 100%);; border-radius:12px; padding:10px; text-align:center; box-shadow:0 4px 10px rgba(0,0,0,0.1);}
+    .btn { padding:10px 16px; border:none; border-radius:12px; background:linear-gradient(135deg,#6366f1,#8b5cf6); color:white; font-weight:bold; cursor:pointer; transition:0.3s;}
+    .btn:hover { transform:scale(1.08); background:linear-gradient(135deg,#8b5cf6,#6366f1); }
+    .back-btn { margin-top:10px; background:linear-gradient(135deg,#10b981,#22d3ee); color:white; padding:10px; border:none; border-radius:12px; cursor:pointer; display:block; width:100%; font-weight:bold;}
+    .quiz-options { background: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%);
+      color: white;
+      font-weight: bold;
+      border: none;
+      border-radius: 12px;
+      padding: 12px;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.2s ease, box-shadow 0.2s ease; }
+    .quiz-options button { margin:4px; display:block; width:100%; transition:all 0.3s ease; }
+    img.answer-img {
+      width:250px;
+      display: block;
+      margin:10px auto;
+      border-radius:12px;
+      box-shadow:0 4px 12px rgba(0,0,0,0.25);
+    }
+    .pledge-text { margin:12px 0; font-size:18px; font-weight:500; }
+    .pledge-text span { color:black; transition:color 0.2s ease; }
+    .pledge-text span.active { color:red; font-weight:bold; }
+    textarea#input { width: calc(100% - 120px); height:48px; padding:8px; border-radius:8px; border:1px solid #ddd; resize:none; }
+    form#composer { display:flex; gap:8px; align-items:center; }
+    button[type="submit"] { min-width:110px; height:48px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <main class="app">
+      <div class="heading">🌟 Brave Buddy – For You 🌟</div>
+      <img src="images/bulb_default.png" class="mascot" id="mascot" alt="Mascot">
+
+      <div class="controls">
+        <button id="langToggle" class="btn">🌐 Language: English</button>
+        <button id="voiceBtn" class="btn" onclick="toggleVoice();playClick()">🔊 Voice ON</button>
+        <button id="micBtn" class="btn">🎤 Speak</button>
+      </div>
+      <audio id="clickSound" src="chime.mp3" preload="auto"></audio>
+      <audio id="clapSound" src="clap.mp3" preload="auto"></audio>
+      <section id="chat" class="chat" role="log" aria-live="polite"></section>
+      <form id="composer" autocomplete="off">
+        <textarea id="input" placeholder="Type here..."></textarea>
+        <button class="btn" type="submit">Send ▶</button>
+      </form>
+    </main>
+  </div>
+
+<script>
+/* ----------------- Elements ----------------- */
+const chat=document.getElementById("chat");
+const mascot=document.getElementById("mascot");
+const langToggle=document.getElementById("langToggle");
+const micBtn=document.getElementById("micBtn");
+
+/* ----------------- Settings & State ----------------- */
+let language="en";
+let voiceEnabled=true;
+let voiceRate = 0.9;
+let state = {
+  awaitingName:true,
+  userName:null,
+  awaitingRoleplay:false,
+  awaitingQuiz:false,
+  quizIndex:0,
+  quizScore:0,
+  awaitingPledge:false,
+  awaitingBullyingCategory:false,
+  awaitingBullyingType:false,
+  bullyingPersona:null,
+  // Human verification fields
+  awaitingCode:true,
+  secretCode:null,
+  codeAttempts:0,
+  maxCodeAttempts:3
+};
+
+/* ----------------- Voice output ----------------- */
+function toggleVoice() {
+  voiceEnabled = !voiceEnabled;
+  const btn = document.getElementById("voiceBtn");
+  btn.innerText = voiceEnabled ? "🔊 Voice ON" : "🔇 Voice OFF";
+
+  // Stop any current speech immediately when OFF
+  if (!voiceEnabled) {
+    speechSynthesis.cancel();
+  }
+}
+
+function speak(text) {
+  return new Promise((resolve) => {
+    if (!voiceEnabled) { resolve(); return; }
+
+    // stop old voice before starting new
+    speechSynthesis.cancel();
+
+    let cleaned = text
+      .replace(/<b>\d+<\/b>/g, "")
+      .replace(/<[^>]*>/g, "")
+      .replace(/[^\p{L}\p{N}\s.,!?'"-]/gu, "")
+      .replace(/\s+/g, " ")
+      .trim();
+
+    if (cleaned.length === 0) { resolve(); return; }
+
+    let utterance = new SpeechSynthesisUtterance(cleaned);
+    utterance.lang = (/[\u0900-\u097F]/.test(cleaned)) ? "hi-IN" : "en-US";
+    utterance.rate = 0.9;
+
+    utterance.onend = () => { autoScroll(); resolve(); };
+    utterance.onboundary = autoScroll;
+
+    speechSynthesis.speak(utterance);
+  });
+
+  // ❌ removed speechSynthesis.cancel() so it doesn’t cut earlier lines
+}
+micBtn.onclick = () => {
+  if (recognition) {
+    recognition.lang = (language === "en") ? "en-US" : "hi-IN";
+    recognition.start();
+    addMessage("bot", (language==="en") ? "🎤 Listening..." : "🎤 सुन रहा हूँ...", true); // silent so it doesn’t speak
+  } else {
+    addMessage("bot", (language==="en") 
+      ? "⚠️ Speech recognition not supported in this browser." 
+      : "⚠️ यह ब्राउज़र वॉइस रिकग्निशन सपोर्ट नहीं करता।");
+  }
+};
+
+/* ----------------- Mascot & Moods ----------------- */
+function setMascotMood(mood){ mascot.src="images/"+mood+".png"; }
+function playClap() {
+  const clap = document.getElementById("clapSound");
+  if (clap) { clap.currentTime = 0; clap.play(); }
+}
+
+/* ----------------- Chat UI helpers ----------------- */
+function addMessage(role,text){
+  const row=document.createElement("div");
+  row.className="msg "+role;
+  const bubble=document.createElement("div");
+  bubble.className="bubble";
+  bubble.innerHTML=text;
+  row.appendChild(bubble);
+  chat.appendChild(row);
+  autoScroll();
+  if(role==="bot") speak(text);
+}
+function addImage(src){
+  const img=document.createElement("img");
+  img.src="images/"+src;
+  img.className="answer-img";
+  chat.appendChild(img);
+  autoScroll();
+}
+function autoScroll() {
+  requestAnimationFrame(() => {
+    chat.scrollTo({ top: chat.scrollHeight, behavior: "smooth" });
+  });
+}
+
+/* ----------------- Texts ----------------- */
+const texts = {
+  en:{
+    intro:"👋 Let’s introduce each other! First tell me your name. I am your Brave Buddy to give awareness on bullying.",
+    nice:"Nice to meet you,",
+    bullying:"Bullying = repeated harm with imbalance of power.",
+    advice:"If you are being bullied Stay calm, walk away, save evidence, tell an adult. Advice If you want to give advice to a friend who is bullying someone is a sensitive situation and plan the conversation carefully by choosing the right time and place, set a positive tone, explain the consequences of bullying and be specific.",
+    report:"Save proof, block/report, tell a teacher/parent.For any immediate threat or danger related to bullying always call your country's universal emergency number 112 (Emergency Response Support System-ERSS), Childline 1098 is a 24-hour, free, national emergency phone service. For women facing violence or harassment, including in workplace, The National Commission for Women has a helpline at 7827170170",
+    role:"🎭 Role-play: Someone says 'You’re not good enough.' What do you reply?",
+    quizIntro:"📝 Let’s start the quiz!",
+    pledge:"I pledge to stand against bullying and spread kindness.",
+    closing:"🌟 Thank you! You are a Brave Buddy!",
+    back:"⬅ Back to Menu"
+  },
+  hi:{
+    intro:"👋 चलो एक-दूसरे से परिचय करें! पहले अपना नाम बताइए। मैं आपका ब्रेव बडी हूँ जो बदमाशी के बारे में जागरूकता देता है।",
+    nice:"आपसे मिलकर खुशी हुई,",
+    bullying:"बदमाशी = बार-बार किया गया नुकसान जिसमें शक्ति का असंतुलन हो।",
+    advice:"शांत रहें, दूर चले जाएँ, सबूत सुरक्षित रखें और किसी बड़े को बताएं।",
+    report:"सबूत रखें, ब्लॉक/रिपोर्ट करें और शिक्षक या माता-पिता को बताएं।",
+    role:"🎭 भूमिका निभाएँ: कोई कहे 'तुम अच्छे नहीं हो।' आप क्या जवाब देंगे?",
+    quizIntro:"📝 चलो क्विज़ शुरू करें!",
+    pledge:"मैं बदमाशी के खिलाफ खड़ा रहूँगा और दया फैलाऊँगा।",
+    closing:"🌟 धन्यवाद! आप बदमाशी के खिलाफ एक ब्रेव बडी हैं!",
+    back:"⬅ मेन्यू पर वापस जाएँ"
+  }
+};
+
+/* ----------------- Language toggle ----------------- */
+langToggle.onclick=()=>{
+  language=(language==="en")?"hi":"en";
+  langToggle.textContent=(language==="en")?"🌐 Language: English":"🌐 भाषा: हिंदी";
+  // when language changes, if human verification still pending, show refreshed prompt
+  if(state.awaitingCode){
+    askHumanVerification(true); // refresh message only
+  } else {
+    showMenu();
+  }
+};
+
+/* ----------------- Choice buttons helper ----------------- */
+function addChoiceButtons(labels, onChoose){
+  // remove any existing temp-ui
+  document.querySelectorAll(".temp-ui").forEach(x=>x.remove());
+  const box=document.createElement("div");
+  box.className="quiz-options temp-ui";
+  labels.forEach(l=>{
+    const b=document.createElement("button");
+    b.className="btn";
+    b.textContent=l;
+    b.onclick=(e)=>{ e.preventDefault(); onChoose(l); box.querySelectorAll("button").forEach(bb=>bb.disabled=true); };
+    box.appendChild(b);
+  });
+  chat.appendChild(box); autoScroll();
+}
+
+/* ----------------- Menu & Navigation ----------------- */
+function showMenu(){
+  // remove previous temporary UIs
+  chat.querySelectorAll(".menu,.back-btn,.temp-ui").forEach(o=>o.remove());
+  const c=document.createElement("div"); 
+  c.className="menu";
+
+  const cards=[
+    {t:(language==="en"?"🧘 Calm Down Mode":"🧘 शांत रहने का तरीका"), h:()=>calmDown()},   // ✅ moved to first
+    {t:(language==="en"?"🤔 Is it Bullying?":"🤔 क्या यह बदमाशी है?"), h:()=>detectBullying()},
+    {t:(language==="en"?"What is bullying?":"बदमाशी क्या है?"), h:()=>explainBullying()},
+    {t:(language==="en"?"Advice":"सलाह"), h:()=>giveAdvice()},
+    {t:(language==="en"?"Report bullying":"बदमाशी की रिपोर्ट"), h:()=>reportBullying()},
+    {t:(language==="en"?"Practice replies":"जवाब अभ्यास"), h:()=>startRoleplay()},
+    {t:(language==="en"?"Quick quiz":"क्विज़"), h:()=>startQuiz()},
+    {t:(language==="en"?"📍 Share Location":"📍 स्थान साझा करें"), h:()=>askLocation()},
+    {t:(language==="en"?"📝 Report Bullying Form":"📝 बदमाशी रिपोर्ट फॉर्म"), h:()=>reportForm()},
+     {t:(language==="en"?"Closing / Pledge":"समापन / शपथ"), h:()=>pledge()}
+  ];
+
+  cards.forEach(({t,h})=>{
+    const card=document.createElement("div"); 
+    card.className="card";
+    card.innerHTML=`<h4>${t}</h4>`;
+    const btn=document.createElement("button"); 
+    btn.className="btn"; 
+    btn.textContent="Open ▶"; 
+    btn.onclick=(e)=>{ e.preventDefault(); h(); };
+    card.appendChild(btn); 
+    c.appendChild(card);
+  });
+
+  chat.appendChild(c); 
+  autoScroll();
+}
+async function calmDown(){
+  setMascotMood("bulb_thinking");
+
+  await speak((language==="en")
+    ? "🧘 Let's do a short breathing exercise. Follow my voice: Inhale… Hold… Exhale…"
+    : "🧘 चलो एक छोटा श्वास अभ्यास करें। मेरी आवाज़ का अनुसरण करें: श्वास लो… रोको… छोड़ो…"
+  );
+
+  const canvas=document.createElement("div");
+  canvas.className="temp-ui";
+  canvas.style.width="100%";
+  canvas.style.height="200px";
+  canvas.style.display="flex";
+  canvas.style.alignItems="center";
+  canvas.style.justifyContent="center";
+  chat.appendChild(canvas);
+
+  // Heart shape
+const heart=document.createElement("div");
+heart.style.position="relative";
+heart.style.width="100px";
+heart.style.height="90px";
+heart.style.background="red";
+heart.style.transform="rotate(-45deg) scale(1)";
+heart.style.margin="20px";
+heart.style.transition="all 4s ease-in-out";
+heart.style.boxShadow="0 0 25px rgba(255,0,0,0.6), 0 0 50px rgba(255,0,0,0.4)";
+canvas.appendChild(heart);
+
+// Top left circle
+const before=document.createElement("div");
+before.style.content="''";
+before.style.position="absolute";
+before.style.width="100px";
+before.style.height="100px";
+before.style.borderRadius="50%";
+before.style.background="red";
+before.style.top="-50px";
+before.style.left="0";
+heart.appendChild(before);
+
+// Top right circle
+const after=document.createElement("div");
+after.style.content="''";
+after.style.position="absolute";
+after.style.width="100px";
+after.style.height="100px";
+after.style.borderRadius="50%";
+after.style.background="red";
+after.style.left="50px";
+after.style.top="0";
+heart.appendChild(after);
+
+let step=0;
+async function breathe(){
+  if(step%2===0){
+    // Inhale - grow heart
+    heart.style.transform="rotate(-45deg) scale(0.9)";
+    heart.style.boxShadow="0 0 40px rgba(255,0,0,0.5), 0 0 80px rgba(255,0,0,0.3)";
+    await speak((language==="en")?"🌬️ Inhale":"🌬️ श्वास लो");
+  } else {
+    // Exhale - shrink heart
+    heart.style.transform="rotate(-45deg) scale(1.4)";
+    heart.style.boxShadow="0 0 15px rgba(255,0,0,0.8), 0 0 30px rgba(255,0,0,0.6)";
+    await speak((language==="en")?"😌 Exhale":"😌 श्वास छोड़ो");
+  }
+  step++;
+  if(step<6){ 
+    setTimeout(breathe, 500); 
+  } else {
+    await speak((language==="en")?"✨ Well done!":"✨ बहुत अच्छा!");
+    addBack();
+  }
+}
+
+  breathe();
+}
+function detectBullying(){
+  setMascotMood("bulb_thinking");
+  state.awaitingBullyingDetect = true;
+  
+  addMessage("bot",(language==="en")
+    ? "📝 Please describe the situation. I’ll try to tell you if it looks like bullying."
+    : "📝 कृपया स्थिति का वर्णन करें। मैं बताने की कोशिश करूँगा कि यह बदमाशी है या नहीं।");
+
+  addBack();
+}
+function askLocation(){
+  setMascotMood("bulb_thinking");
+  addMessage("bot",(language==="en")
+    ? "📍 Trying to detect your location… please allow location access in your browser."
+    : "📍 आपका स्थान पता करने की कोशिश कर रहा हूँ… कृपया ब्राउज़र में अनुमति दें।");
+
+  if(navigator.geolocation){
+    navigator.geolocation.getCurrentPosition(
+      (pos)=>{
+        const lat=pos.coords.latitude.toFixed(4);
+        const lon=pos.coords.longitude.toFixed(4);
+        const mapLink=`https://www.google.com/maps?q=${lat},${lon}`;
+
+        addMessage("bot",(language==="en")
+          ? `✅ Location detected: ${lat}, ${lon}<br><a href="${mapLink}" target="_blank">Open in Maps</a>`
+          : `✅ स्थान मिला: ${lat}, ${lon}<br><a href="${mapLink}" target="_blank">मानचित्र में खोलें</a>`);
+
+        addMessage("bot",(language==="en")
+          ? `🚨 Share this with police/parents. Quick Call: <a href="tel:112">112</a>`
+          : `🚨 पुलिस/माता-पिता से साझा करें। तुरंत कॉल: <a href="tel:112">112</a>`);
+      },
+      ()=>addMessage("bot",(language==="en")
+        ? "⚠️ Location access denied."
+        : "⚠️ स्थान की अनुमति अस्वीकार की गई।")
+    );
+  } else {
+    addMessage("bot",(language==="en")
+      ? "❌ Your browser does not support location."
+      : "❌ आपका ब्राउज़र स्थान सपोर्ट नहीं करता।");
+  }
+  addBack();
+}
+function reportForm(){
+  setMascotMood("bulb_serious");
+  addMessage("bot",(language==="en")
+    ? "📝 Fill this quick form to create a report you can share with a teacher/parent."
+    : "📝 इस छोटे फॉर्म को भरें ताकि आप शिक्षक/माता-पिता के लिए रिपोर्ट बना सकें।");
+
+  const formDiv=document.createElement("div");
+  formDiv.className="temp-ui";
+
+  formDiv.innerHTML=`
+    <input type="text" id="who" placeholder="${language==="en"?"Who bullied you?":"किसने बदमाशी की?"}" style="width:100%;margin:5px 0;padding:6px;">
+    <input type="text" id="where" placeholder="${language==="en"?"Where did it happen?":"यह कहाँ हुआ?"}" style="width:100%;margin:5px 0;padding:6px;">
+    <textarea id="what" placeholder="${language==="en"?"Describe what happened":"क्या हुआ बताइए"}" style="width:100%;height:80px;margin:5px 0;padding:6px;"></textarea>
+    <button class="btn" id="submitReport">${language==="en"?"📤 Generate Report":"📤 रिपोर्ट बनाएँ"}</button>
+  `;
+  chat.appendChild(formDiv);
+
+  document.getElementById("submitReport").onclick=()=>{
+    const who=document.getElementById("who").value.trim();
+    const where=document.getElementById("where").value.trim();
+    const what=document.getElementById("what").value.trim();
+
+    if(!who||!where||!what){
+      addMessage("bot",(language==="en")?"⚠️ Please fill all fields.":"⚠️ कृपया सभी जानकारी भरें।");
+      return;
+    }
+
+    const reportText=(language==="en")
+      ? `📋 Bullying Report:\nWho: ${who}\nWhere: ${where}\nWhat: ${what}`
+      : `📋 बदमाशी रिपोर्ट:\nकौन: ${who}\nकहाँ: ${where}\nक्या हुआ: ${what}`;
+
+    addMessage("bot",reportText.replace(/\n/g,"<br>"));
+
+    // allow download
+    let blob=new Blob([reportText],{type:"text/plain"});
+    let link=document.createElement("a");
+    link.href=URL.createObjectURL(blob);
+    link.download="Bullying_Report.txt";
+    link.textContent=(language==="en")?"⬇️ Download Report":"⬇️ रिपोर्ट डाउनलोड करें";
+    chat.appendChild(link);
+    autoScroll();
+  };
+
+  addBack();
+}
+
+function addBack(){
+  const b=document.createElement("button");
+  b.className="back-btn";
+  b.textContent=texts[language].back;
+  b.onclick=(e)=>{ e.preventDefault();
+
+    // reset bullying state on back
+    state.awaitingBullyingCategory=false;
+    state.awaitingBullyingType=false;
+    state.bullyingPersona=null;
+    chat.querySelectorAll(".temp-ui").forEach(x=>x.remove());
+    showMenu(); setMascotMood("bulb_default");
+  };
+  chat.appendChild(b);
+}
+
+/* ----------------- Sections: Bullying flow, Advice, Report, Roleplay ----------------- */
+function explainBullying(){
+  setMascotMood("bulb_serious");
+  addMessage("bot",texts[language].bullying);
+  addImage("bullying.jpeg");
+  // start category question
+  state.awaitingBullyingCategory=true;
+  state.awaitingBullyingType=false;
+  state.bullyingPersona=null;
+  const q = (language==="en")
+    ? "Are you a <b>child</b>, <b>adult</b>, or <b>old man</b>? Type your choice or tap a button:"
+    : "क्या आप <b>बच्चे</b>, <b>वयस्क</b> या <b>बुज़ुर्ग</b> हैं? अपना विकल्प टाइप करें या बटन दबाएँ:";
+  addMessage("bot","👀 "+q);
+  addChoiceButtons((language==="en"?["Child","Adult","Old man"]:["बच्चा","वयस्क","बुज़ुर्ग"]),(label)=>{ handleBullyingCategoryInput(label); });
+  addBack();
+}
+function giveAdvice(){ setMascotMood("bulb_happy"); addMessage("bot",texts[language].advice); addImage("advice.jpeg"); addBack(); }
+function reportBullying(){ setMascotMood("bulb_serious"); addMessage("bot",texts[language].report); addImage("report.jpeg"); addBack(); }
+function startRoleplay(){ setMascotMood("bulb_thinking"); state.awaitingRoleplay=true; addMessage("bot",texts[language].role); addImage("roleplay.jpeg"); addBack(); }
+function handleRoleplayResponse(text){
+  const safe=(language==="en")
+    ? /(stop|leave|respect|not okay|teacher|report|block)/i.test(text)
+    : /(रुक|छोड़|सम्मान|ठीक नहीं|शिक्षक|रिपोर्ट|ब्लॉक)/i.test(text);
+  if(safe){ setMascotMood("bulb_happy"); addMessage("bot",(language==="en")?"⭐ Great response!":"⭐ अच्छा जवाब!"); }
+  else { setMascotMood("bulb_serious"); addMessage("bot",(language==="en")?"💡 Try: 'I want this to stop.'":"💡 कोशिश करें: 'मैं चाहता हूँ यह रुके।'"); }
+  state.awaitingRoleplay=false; addBack();
+}
+
+/* ----------------- Quiz ----------------- */
+const quizQuestions = {
+  en:[
+    {q:"Which of these is bullying?",options:["Teasing once","Helping a friend","Repeatedly making fun of someone"],answer:2},
+    {q:"What should you do if you see bullying?",options:["Ignore it","Support the target and report it","Join in"],answer:1},
+    {q:"Online bullying is also called?",options:["Cyberbullying","Play fight","Prank"],answer:0}
+  ],
+  hi:[
+    {q:"इनमें से कौन बदमाशी है?",options:["एक बार चिढ़ाना","मित्र की मदद करना","बार-बार मजाक उड़ाना"],answer:2},
+    {q:"अगर आप बदमाशी देखें तो क्या करें?",options:["अनदेखा करें","पीड़ित का साथ दें और रिपोर्ट करें","शामिल हो जाएँ"],answer:1},
+    {q:"ऑनलाइन बदमाशी को क्या कहते हैं?",options:["साइबरबुलिंग","खेल झगड़ा","मजाक"],answer:0}
+  ]
+};
+function startQuiz(){
+  setMascotMood("bulb_thinking");
+  state.awaitingQuiz=true; state.quizIndex=0; state.quizScore=0;
+  addMessage("bot",texts[language].quizIntro); addImage("quiz.jpeg");
+  showQuizQuestion(); addBack();
+}
+function showQuizQuestion(){
+  setMascotMood("bulb_thinking");
+  const q = quizQuestions[language][state.quizIndex];
+  addMessage("bot",`Q${state.quizIndex+1}: ${q.q}`);
+  const opts=document.createElement("div"); opts.className="quiz-options temp-ui";
+  q.options.forEach((opt,i)=>{
+    const btn=document.createElement("button"); btn.className="btn"; btn.textContent=(i+1)+". "+opt;
+    btn.onclick=()=>handleQuizAnswer(btn,i); opts.appendChild(btn);
+  });
+  chat.appendChild(opts); autoScroll();
+}
+function handleQuizAnswer(btn,choice){
+  const q=quizQuestions[language][state.quizIndex];
+  btn.parentNode.querySelectorAll("button").forEach(b=>b.disabled=true);
+  if(choice===q.answer){
+    setMascotMood("bulb_happy"); addMessage("bot",(language==="en")?"✅ Correct!":"✅ सही जवाब!"); playClap(); btn.style.background="#22c55e"; state.quizScore++;
+  } else {
+    setMascotMood("bulb_serious");
+    addMessage("bot",(language==="en")?"❌ Wrong. Correct: "+q.options[q.answer]:"❌ गलत। सही उत्तर: "+q.options[q.answer]);
+    btn.style.background="#ef4444";
+  }
+  state.quizIndex++;
+  chat.querySelectorAll(".temp-ui").forEach(x=>x.remove());
+  if(state.quizIndex<quizQuestions[language].length){ setTimeout(showQuizQuestion,800); }
+  else {
+    setMascotMood("bulb_cheer");
+    addMessage("bot",(language==="en")
+      ? `🎉 Quiz finished! Score: ${state.quizScore}/${quizQuestions[language].length}`
+      : `🎉 क्विज़ समाप्त! स्कोर: ${state.quizScore}/${quizQuestions[language].length}`);
+    state.awaitingQuiz=false;
+  }
+}
+
+/* ----------------- Pledge ----------------- */
+function pledge(){
+  setMascotMood("bulb_cheer");
+  state.awaitingPledge=true;
+  const pledgeText=texts[language].pledge;
+  const pledgeDiv=document.createElement("div");
+  pledgeDiv.className="pledge-text";
+  pledgeText.split(" ").forEach((w,i)=>{
+    const span=document.createElement("span");
+    span.textContent=w+" "; span.id="pledgeWord"+i; pledgeDiv.appendChild(span);
+  });
+  chat.appendChild(pledgeDiv);
+  addImage("pledge.jpeg");
+  addMessage("bot",(language==="en")?"💖 Repeat after me:":"💖 मेरे बाद बोलो:");
+  const utter=new SpeechSynthesisUtterance(pledgeText);
+  utter.lang=(language==="en")?"en-US":"hi-IN";
+  let i=0; const words=pledgeText.split(" ");
+  utter.onboundary=()=>{ if(i<words.length){
+    document.querySelectorAll(".pledge-text span").forEach(s=>s.classList.remove("active"));
+    const cur=document.getElementById("pledgeWord"+i); if(cur) cur.classList.add("active"); i++; } };
+  speechSynthesis.speak(utter);
+  addBack();
+}
+function handlePledgeResponse(text){
+  if(language==="en"){
+    if(text.toLowerCase().includes("i pledge") && text.toLowerCase().includes("bullying")){
+      setMascotMood("bulb_wave"); addMessage("bot","🌟 Wonderful! You spoke the pledge with courage."); playClap(); state.awaitingPledge=false;
+    } else { addMessage("bot","⚠️ Please try again and say the pledge clearly."); }
+  } else {
+    if(text.includes("मैं") && text.includes("बदमाशी")){
+      setMascotMood("bulb_wave"); addMessage("bot","🌟 शानदार! आपने शपथ ली।"); state.awaitingPledge=false;
+    } else { addMessage("bot","⚠️ कृपया फिर से प्रयास करें और शपथ स्पष्ट रूप से बोलें।"); }
+  }
+}
+
+/* ----------------- Search fallback ----------------- */
+async function searchAndAnswer(query){
+  try {
+    addMessage("bot","🔎 Let me check that for you...");
+    const url="https://api.duckduckgo.com/?q="+encodeURIComponent(query)+"&format=json";
+    const res=await fetch(url);
+    const data=await res.json();
+    let answer=data.AbstractText || data.Heading || "Sorry, I couldn't find anything clear.";
+    addMessage("bot",answer);
+  } catch (e){ addMessage("bot","⚠️ Error fetching answer."); }
+}
+
+/* ----------------- Bullying helpers ----------------- */
+function handleBullyingCategoryInput(text){
+  const t=text.toLowerCase();
+  chat.querySelectorAll(".temp-ui").forEach(x=>x.remove());
+  if(/child/.test(t) || (language==="hi" && /बच्चा|बच्चे/.test(t))){ state.bullyingPersona="child"; }
+  else if(/adult/.test(t) || (language==="hi" && /वयस्क/.test(t))){ state.bullyingPersona="adult"; }
+  else if(/old/.test(t) || (language==="hi" && /बुज़ुर्ग|बुजुर्ग/.test(t))){ state.bullyingPersona="old"; }
+  else {
+    addMessage("bot", (language==="en") ? "⚠️ Please type <b>child</b>, <b>adult</b>, or <b>old man</b>." : "⚠️ कृपया <b>बच्चा</b>, <b>वयस्क</b> या <b>बुज़ुर्ग</b> लिखें।");
+    addChoiceButtons((language==="en" ? ["Child","Adult","Old man"] : ["बच्चा","वयस्क","बुज़ुर्ग"]),(label)=>handleBullyingCategoryInput(label));
+    return;
+  }
+
+  state.awaitingBullyingCategory=false;
+  state.awaitingBullyingType=true;
+
+  let prompt="", options=[];
+  if(language==="en"){
+    if(state.bullyingPersona==="child"){ prompt="What kind of bullying? (physical / verbal / cyber)"; options=["Physical","Verbal","Cyber"]; }
+    if(state.bullyingPersona==="adult"){ prompt="What kind of bullying? (workplace / social / online)"; options=["Workplace","Social","Online"]; }
+    if(state.bullyingPersona==="old"){ prompt="What kind of bullying? (neglect / disrespect / financial)"; options=["Neglect","Disrespect","Financial"]; }
+  } else {
+    if(state.bullyingPersona==="child"){ prompt="किस प्रकार की बदमाशी? (शारीरिक / मौखिक / ऑनलाइन)"; options=["शारीरिक","मौखिक","ऑनलाइन"]; }
+    if(state.bullyingPersona==="adult"){ prompt="किस प्रकार की बदमाशी? (कार्यस्थल / सामाजिक / ऑनलाइन)"; options=["कार्यस्थल","सामाजिक","ऑनलाइन"]; }
+    if(state.bullyingPersona==="old"){ prompt="किस प्रकार का दुर्व्यवहार? (उपेक्षा / असम्मान / आर्थिक)"; options=["उपेक्षा","असम्मान","आर्थिक"]; }
+  }
+  setMascotMood("bulb_thinking");
+  addMessage("bot","💭 "+prompt);
+  addChoiceButtons(options,(label)=>handleBullyingTypeInput(label));
+}
+function handleBullyingTypeInput(text){
+  const t=text.toLowerCase();
+  chat.querySelectorAll(".temp-ui").forEach(x=>x.remove());
+  let reply="";
+  if(language==="en"){
+    if(state.bullyingPersona==="child"){
+      if(/physical/.test(t)) reply="🏃 Tell a teacher or parent immediately. Stay with friends for safety.";
+      else if(/verbal/.test(t)) reply="🗣️ Stay calm, use a firm voice, and report to a trusted adult.";
+      else if(/cyber/.test(t)) reply="💻 Block/report the bully online and show messages to a guardian.";
+    } else if(state.bullyingPersona==="adult"){
+      if(/workplace/.test(t)) reply="💼 Document incidents, talk to HR/management, and seek formal support.";
+      else if(/social/.test(t)) reply="👥 Set boundaries, lean on supportive friends/family, consider mediation.";
+      else if(/online/.test(t)) reply="🌐 Block/report abuse, secure accounts, consider legal/cybercrime help.";
+    } else if(state.bullyingPersona==="old"){
+      if(/neglect/.test(t)) reply="🤝 Contact social services/NGOs or a trusted neighbor for immediate support.";
+      else if(/disrespect/.test(t)) reply="💬 Share concerns with family/community leaders; ask for respect and safety.";
+      else if(/financial/.test(t)) reply="💰 Protect assets; consult a lawyer or helpline about financial exploitation.";
+    }
+  } else {
+    if(state.bullyingPersona==="child"){
+      if(/शारीरिक/.test(t)) reply="🏃 तुरंत शिक्षक/माता-पिता को बताएं। दोस्तों के साथ रहें।";
+      else if(/मौखिक/.test(t)) reply="🗣️ शांत रहें, दृढ़ता से बोलें, और किसी बड़े को बताएं।";
+      else if(/ऑनलाइन/.test(t)) reply="💻 ऑनलाइन ब्लॉक/रिपोर्ट करें और संदेश अभिभावक को दिखाएँ।";
+    } else if(state.bullyingPersona==="adult"){
+      if(/कार्यस्थल/.test(t)) reply="💼 घटनाएँ दर्ज करें, HR/प्रबंधन से बात करें, औपचारिक सहायता लें।";
+      else if(/सामाजिक/.test(t)) reply="👥 सीमाएँ तय करें, विश्वसनीय मित्र/परिवार का सहारा लें।";
+      else if(/ऑनलाइन/.test(t)) reply="🌐 ब्लॉक/रिपोर्ट करें, अकाउंट सुरक्षित करें, साइबर हेल्पलाइन से संपर्क करें।";
+    } else if(state.bullyingPersona==="old"){
+      if(/उपेक्षा/.test(t)) reply="🤝 सामाजिक सेवाओं/NGO या विश्वसनीय पड़ोसी से मदद लें।";
+      else if(/असम्मान/.test(t)) reply="💬 परिवार/समुदाय से बात करें; सम्मान व सुरक्षा की मांग करें।";
+      else if(/आर्थिक/.test(t)) reply="💰 संपत्ति सुरक्षा करें; आर्थिक शोषण पर कानूनी सलाह लें।";
+    }
+  }
+
+  if(reply){
+  setMascotMood("bulb_happy");
+
+  // Show advice
+  addMessage("bot", reply);
+
+
+  // Speak thank-you AFTER a small pause
+  setTimeout(()=>{
+    addMessage("bot", (language==="en")
+      ? "✅ Thank you for sharing. You can use the Back button to return to the menu."
+      : "✅ साझा करने के लिए धन्यवाद। मेन्यू पर लौटने के लिए Back बटन दबाएँ।");
+  }, 2000); // 2 sec delay
+
+  state.awaitingBullyingType=false;
+  state.bullyingPersona=null;
+}
+
+
+
+}
+
+/* ----------------- Human verification (integrated) ----------------- */
+function cleanForSpeech(text) {
+  // Remove emojis/symbols but keep letters/numbers
+  return text.replace(/[^\p{L}\p{N}\s.,!?'"-]/gu, "").trim();
+}
+
+function generateHumanCode(){
+  const code = Math.floor(1000 + Math.random() * 9000); // 4-digit
+  state.secretCode = String(code);
+  state.codeAttempts = 0;
+  state.awaitingCode = true;
+  return state.secretCode;
+}
+function askHumanVerification(onlyRefresh=false){
+  // remove temp-ui so refresh button shows single copy
+  chat.querySelectorAll(".temp-ui").forEach(x=>x.remove());
+  const code = state.secretCode || generateHumanCode();
+  const msg = (language === "en")
+    ? `🤖 Before we start, please type this code to prove you are human: <b>${code}</b>`
+    : `🤖 शुरू करने से पहले कृपया यह कोड टाइप करें: <b>${code}</b>`;
+  if(!onlyRefresh) addMessage("bot", msg);
+  // create a small refresh UI below message
+  addChoiceButtons([(language==="en")?"Refresh code":"कोड बदलें"],()=>{
+    const newCode = generateHumanCode();
+    addMessage("bot", (language==="en") ? `🔁 New code: <b>${newCode}</b>` : `🔁 नया कोड: <b>${newCode}</b>`);
+  });
+}
+
+/* ----------------- Handle user input (main) ----------------- */
+function analyzeBullyingSituation(text){
+  state.awaitingBullyingDetect = false;
+  const lower=text.toLowerCase();
+  let result="";
+
+  // simple keyword checks
+  const physical=["hit","push","kick","slap","beat"];
+  const verbal=["insult","stupid","ugly","abuse","curse","mock"];
+  const cyber=["online","post","comment","whatsapp","facebook","instagram","troll"];
+  const power=["teacher","boss","senior","group","gang","older"];
+
+  let detected=[];
+
+  if(physical.some(w=>lower.includes(w))) detected.push("physical harm");
+  if(verbal.some(w=>lower.includes(w))) detected.push("verbal abuse");
+  if(cyber.some(w=>lower.includes(w))) detected.push("cyberbullying");
+  if(power.some(w=>lower.includes(w))) detected.push("power imbalance");
+
+  if(detected.length>0){
+    result = (language==="en")
+      ? `⚠️ This situation shows signs of bullying: ${detected.join(", ")}.`
+      : `⚠️ इस स्थिति में बदमाशी के संकेत हैं: ${detected.join(", ")}.`;
+  } else {
+    result = (language==="en")
+      ? "✅ It does not strongly look like bullying, but always trust your feelings and stay safe."
+      : "✅ यह स्पष्ट रूप से बदमाशी नहीं लगती, लेकिन हमेशा अपनी भावना पर भरोसा करें और सुरक्षित रहें।";
+  }
+
+  addMessage("bot",result);
+  addMessage("bot",(language==="en")
+    ? "👉 You can go back to the menu for more help."
+    : "👉 अधिक मदद के लिए मेन्यू पर वापस जाएँ।");
+}
+
+function handleUserInput(text){
+  // 1) Human verification step (if pending)
+if(state.awaitingBullyingDetect){
+  analyzeBullyingSituation(text);
+  return;
+}
+  if (state.awaitingCode) {
+    const cleaned = text.trim();
+    if (cleaned === String(state.secretCode)) {
+      state.awaitingCode = false;
+      addMessage("bot", (language==="en") ? "✅ Code correct! You are verified." : "✅ कोड सही है! आप सत्यापित हो गए हैं।");
+      addMessage("bot", texts[language].intro);
+      return;
+    } else {
+      state.codeAttempts = (state.codeAttempts || 0) + 1;
+      if (state.codeAttempts >= state.maxCodeAttempts) {
+        const newCode = generateHumanCode();
+        addMessage("bot", (language==="en")
+          ? `⚠️ Too many incorrect attempts. Here's a new code: <b>${newCode}</b>`
+          : `⚠️ बहुत प्रयास हुए। नया कोड: <b>${newCode}</b>`);
+        // show refresh button too
+        addChoiceButtons([(language==="en")?"Refresh code":"कोड बदलें"],()=>{
+          const nc = generateHumanCode();
+          addMessage("bot", (language==="en") ? `🔁 New code: <b>${nc}</b>` : `🔁 नया कोड: <b>${nc}</b>`);
+        });
+      } else {
+        addMessage("bot", (language==="en")
+          ? `⚠️ Wrong code. Please type exact code:`
+          : `⚠️ गलत कोड। कृपया ठीक टाइप करें:`);
+      }
+      return;
+    }
+  }
+
+  // 2) Normal bot flows below
+  if(state.awaitingName){
+    state.awaitingName=false;
+    state.userName=text;
+    addMessage("bot",`${texts[language].nice} <b>${state.userName}</b>!`);
+    showMenu();
+    return;
+  }
+  if(state.awaitingBullyingCategory){ handleBullyingCategoryInput(text); return; }
+  if(state.awaitingBullyingType){ handleBullyingTypeInput(text); return; }
+  if(state.awaitingRoleplay){ handleRoleplayResponse(text); return; }
+  if(state.awaitingPledge){ handlePledgeResponse(text); return; }
+  if(state.awaitingQuiz){ return; } // quiz uses buttons; ignore text during quiz
+  // fallback search
+  searchAndAnswer(text);
+}
+
+/* ----------------- Form submit ----------------- */
+document.getElementById("composer").addEventListener("submit",e=>{
+  e.preventDefault();
+  const text=document.getElementById("input").value.trim();
+  if(!text) return;
+  addMessage("user",text);
+  document.getElementById("input").value="";
+  handleUserInput(text);
+});
+
+/* ----------------- Mascot vertical bounce ----------------- */
+let dy = 2;
+function bounceMascotVertical() {
+  const app = document.querySelector(".app");
+  const mascotHeight = mascot.clientHeight || 180;
+  let y = parseInt(mascot.style.top || "150");
+  y += dy;
+  const x = app.clientWidth - mascot.clientWidth - 20;
+  mascot.style.left = x + "px";
+  const minY = 120;
+  const maxY = app.clientHeight - mascotHeight - 20;
+  if (y <= minY || y >= maxY) { dy = -dy; }
+  mascot.style.top = y + "px";
+  requestAnimationFrame(bounceMascotVertical);
+}
+window.onload = () => {
+  const app = document.querySelector(".app");
+  const x = app.clientWidth - mascot.clientWidth - 20;
+  mascot.style.left = x + "px";
+  mascot.style.top = "150px";
+  bounceMascotVertical();
+  // start human verification prompt
+  askHumanVerification();
+};
+
+/* ----------------- Angry reaction ----------------- */
+function angrySpeak(text) {
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.rate = 1;
+  utterance.pitch = 0.6;
+  utterance.volume = 1;
+  speechSynthesis.speak(utterance);
+}
+function playSiren() {
+  const siren = new Audio("siren.mp3");
+  siren.play();
+  setTimeout(() => {
+    siren.pause();
+    siren.currentTime = 0;
+  }, 5000);
+}
+document.getElementById("mascot").addEventListener("click", () => {
+  const m = document.getElementById("mascot");
+  m.classList.add("angry");
+  angrySpeak((language==="en")?"Stay away!":"दूर रहें!");
+  playSiren();
+  setTimeout(()=>{ m.classList.remove("angry"); }, 5000);
+});
+// 🎙️ Voice input
+let recognition;
+if ("webkitSpeechRecognition" in window) {
+  recognition = new webkitSpeechRecognition();
+  recognition.continuous = false;
+  recognition.interimResults = false;
+
+  recognition.onresult = (event) => {
+    const transcript = event.results[0][0].transcript;
+    addMessage("user", transcript);     // show what user said
+    handleUserInput(transcript);        // process as normal input
+  };
+
+  recognition.onerror = (event) => {
+    addMessage("bot", (language==="en") 
+      ? "⚠️ I couldn't hear you properly. Please try again." 
+      : "⚠️ मैं आपको ठीक से सुन नहीं पाया। कृपया फिर प्रयास करें।");
+  };
+}
+
+</script>
+</body>
+</html>
