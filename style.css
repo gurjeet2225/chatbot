@@ -1,0 +1,113 @@
+body {
+  margin: 0;
+  font-family: 'Poppins', sans-serif;
+  background: linear-gradient(135deg, #89f7fe, #66a6ff);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+}
+.container {
+  background: #fff;
+  border-radius: 20px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+  width: 95%;
+  max-width: 600px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+header {
+  background: linear-gradient(90deg, #667eea, #764ba2);
+  color: white;
+  text-align: center;
+  padding: 10px;
+}
+.subtitle {
+  font-size: 0.9em;
+  opacity: 0.9;
+}
+.messages {
+  flex: 1;
+  padding: 15px;
+  overflow-y: auto;
+  background: #f9f9f9;
+}
+.msg {
+  margin: 8px 0;
+}
+.msg.user {
+  text-align: right;
+}
+.msg.user .bubble {
+  background: #4ade80;
+  color: white;
+  border-radius: 15px 15px 0 15px;
+}
+.msg.bot .bubble {
+  background: #e0e0e0;
+  border-radius: 15px 15px 15px 0;
+}
+.bubble {
+  display: inline-block;
+  padding: 10px 14px;
+  max-width: 80%;
+}
+#userForm {
+  display: flex;
+  border-top: 1px solid #ddd;
+}
+#userInput {
+  flex: 1;
+  padding: 10px;
+  border: none;
+  resize: none;
+  font-size: 1em;
+  outline: none;
+}
+#sendBtn {
+  background: #6366f1;
+  color: white;
+  border: none;
+  padding: 10px 15px;
+  cursor: pointer;
+  border-radius: 0;
+}
+.controls {
+  display: flex;
+  justify-content: space-around;
+  background: #fafafa;
+  border-top: 1px solid #ddd;
+  padding: 8px;
+}
+.controls button {
+  border: none;
+  border-radius: 10px;
+  padding: 8px 12px;
+  font-weight: 600;
+  cursor: pointer;
+  background: linear-gradient(90deg, #93a5cf, #e4efe9);
+}
+.controls button:hover {
+  transform: scale(1.05);
+}
+footer {
+  background: #667eea;
+  color: white;
+  text-align: center;
+  font-size: 0.8em;
+  padding: 8px;
+}
+.typing {
+  font-style: italic;
+  color: #555;
+  animation: blink 1s infinite;
+}
+@keyframes blink {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 1; }
+}
+@media (max-width: 600px) {
+  .bubble { font-size: 0.95em; }
+  #userInput { font-size: 0.9em; }
+}
