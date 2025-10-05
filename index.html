@@ -1,39 +1,55 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Brave Buddy – Your Anti-Bullying Friend</title>
-  <link rel="stylesheet" href="style.css">
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Brave Buddy — Anti-Bullying Chatbot</title>
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div class="container">
-    <header>
-      <h1>🌟 Brave Buddy v2 🌟</h1>
-      <p class="subtitle">Your friendly anti-bullying chatbot</p>
-    </header>
-
-    <main id="chatArea">
-      <div id="messages" class="messages"></div>
-      <form id="userForm">
-        <textarea id="userInput" placeholder="Type your message..."></textarea>
-        <button type="submit" id="sendBtn">Send ▶</button>
-      </form>
+  <div class="wrap">
+    <main class="app" id="app">
+      <header class="top">
+        <div class="title">🌟 Brave Buddy</div>
+        <div class="subtitle">Your anti-bullying companion — made by Class 11</div>
+      </header>
 
       <div class="controls">
-        <button id="langToggle">🌐 English</button>
-        <button id="voiceToggle">🔊 Voice ON</button>
-        <button id="musicToggle">🎵 Pause Music</button>
-        <button id="micBtn">🎤 Speak</button>
+        <div class="left-controls">
+          <button id="langToggle" class="ctrl">🌐 English</button>
+          <select id="voiceSelect" class="ctrl"></select>
+          <button id="voiceBtn" class="ctrl">🔊 Voice ON</button>
+        </div>
+        <div class="right-controls">
+          <button id="musicToggle" class="ctrl">🎵 Pause Music</button>
+          <button id="micBtn" class="ctrl">🎤 Speak</button>
+        </div>
       </div>
-    </main>
 
-    <footer>
-      Made with ❤️ by Class 11 Students – Team Brave Hearts
-    </footer>
+      <section id="chat" class="chat" role="log" aria-live="polite"></section>
+
+      <form id="composer" class="composer" autocomplete="off">
+        <textarea id="input" placeholder="Type a message and press Enter to send..." rows="1"></textarea>
+        <button type="submit" class="send">Send ▶</button>
+      </form>
+
+      <div class="mascot-wrap">
+        <!-- Inline SVG mascot so no external images are needed -->
+        <button id="mascot" class="mascot" title="Click me!">
+          <svg viewBox="0 0 100 100" width="84" height="84" xmlns="http://www.w3.org/2000/svg">
+            <g id="bulbGroup">
+              <ellipse cx="50" cy="35" rx="22" ry="22" fill="#FFD966" stroke="#F59E0B" stroke-width="2"/>
+              <rect x="38" y="54" width="24" height="18" rx="4" fill="#d1d5db"/>
+              <rect x="40" y="74" width="20" height="6" rx="2" fill="#9ca3af"/>
+            </g>
+          </svg>
+        </button>
+      </div>
+
+      <footer class="footer">Made with ❤️ by Class 11 Students — Team Brave Hearts</footer>
+    </main>
   </div>
 
-  <audio id="bgMusic" src="meditation.mp3" autoplay loop></audio>
-  <script src="script.js"></script>
+<script src="script.js"></script>
 </body>
 </html>
